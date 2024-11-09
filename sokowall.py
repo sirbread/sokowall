@@ -6,7 +6,7 @@ from random import randint, sample
 
 DISPLAY_WIDTH = 1920
 DISPLAY_HEIGHT = 1040
-WALLPAPER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sokoban_wallpaper.png')
+WALLPAPER_PATH = os.path.join(os.path.expanduser('~'), 'Pictures', 'sokoban_wallpaper.png')
 
 GRID_COLUMNS, GRID_ROWS = 8, 8  
 GRID_SIZE = min(DISPLAY_WIDTH // GRID_COLUMNS, DISPLAY_HEIGHT // GRID_ROWS)
@@ -17,7 +17,6 @@ DIRECTION_MAP = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)
 
 class SokobanGame:
     def __init__(self):
-
         self.win_count = 0  
         self.blocks_to_add = 0  
         self.walls = self.generate_walls()  
@@ -25,28 +24,21 @@ class SokobanGame:
         self.running = True
 
     def generate_walls(self):
-
         return [(0, i) for i in range(GRID_ROWS)] + [(GRID_COLUMNS - 1, i) for i in range(GRID_ROWS)] + \
                [(i, 0) for i in range(GRID_COLUMNS)] + [(i, GRID_ROWS - 1) for i in range(GRID_COLUMNS)]
 
     def check_win(self):
-
         if all(box in self.targets for box in self.boxes):
             self.win_count += 1  
             print(f"Congratulations! You've completed the level! Total Wins: {self.win_count}")
-
             self.blocks_to_add = self.win_count  
-
             self.refresh_level()
 
     def refresh_level(self):
-
         self.walls = self.generate_walls()  
         self.add_random_walls(self.blocks_to_add)  
         self.blocks_to_add += 1  
-
         self.targets, self.boxes, self.player = self.generate_level()  
-
         self.draw()
 
     def draw(self):
@@ -82,7 +74,6 @@ class SokobanGame:
             ctypes.windll.user32.SystemParametersInfoW(20, 0, path, 0)
 
     def get_adjacent_positions(self):
-
         adjacent_positions = set()
         for wx, wy in self.walls:
             for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
@@ -92,7 +83,6 @@ class SokobanGame:
         return adjacent_positions
 
     def generate_level(self):
-
         open_positions = [(x, y) for x in range(1, GRID_COLUMNS - 1) for y in range(1, GRID_ROWS - 1)
                           if (x, y) not in self.walls]
 
@@ -132,12 +122,10 @@ class SokobanGame:
 
         self.player = new_player
         self.check_win()
-        self.draw()  
+        self.draw()
 
     def add_random_walls(self, num_blocks):
-
         for _ in range(num_blocks):
-
             empty_spaces = [(x, y) for x in range(1, GRID_COLUMNS - 1) for y in range(1, GRID_ROWS - 1)
                             if (x, y) not in self.walls and (x, y) not in self.boxes and (x, y) not in self.targets]
 
@@ -148,18 +136,55 @@ class SokobanGame:
 
         self.draw()
 
+    def redo(self):
+        """Redo the level by regenerating positions."""
+        self.targets, self.boxes, self.player = self.generate_level()
+        self.draw()
+
 def create_controls():
     root = tk.Tk()
     root.title("Sokoban Game")
+
     game = SokobanGame()
 
-    controls = tk.Frame(root)
+    controls = tk.Frame(root, padx=20, pady=20)
     controls.pack(side=tk.LEFT)
 
-    tk.Button(controls, text="Up", command=lambda: game.move("up")).grid(row=0, column=1)
-    tk.Button(controls, text="Left", command=lambda: game.move("left")).grid(row=1, column=0)
-    tk.Button(controls, text="Right", command=lambda: game.move("right")).grid(row=1, column=2)
-    tk.Button(controls, text="Down", command=lambda: game.move("down")).grid(row=2, column=1)
+    button_style = {
+        'width': 5,
+        'height': 2,
+        'font': ('Arial', 14, 'bold')
+    }
+
+    up_button = tk.Button(controls, text="↑", command=lambda: game.move("up"), **button_style)
+    left_button = tk.Button(controls, text="←", command=lambda: game.move("left"), **button_style)
+    right_button = tk.Button(controls, text="→", command=lambda: game.move("right"), **button_style)
+    down_button = tk.Button(controls, text="↓", command=lambda: game.move("down"), **button_style)
+    redo_button = tk.Button(controls, text="↺", command=game.redo, **button_style) 
+
+    up_button.grid(row=0, column=1, pady=5)
+    left_button.grid(row=1, column=0, padx=5)
+    redo_button.grid(row=1, column=1)  
+    right_button.grid(row=1, column=2, padx=5)
+    down_button.grid(row=2, column=1, pady=5)
+
+    def handle_keypress(event):
+        key_mappings = {
+            'Up': 'up',
+            'Down': 'down',
+            'Left': 'left',
+            'Right': 'right',
+            'w': 'up',
+            's': 'down',
+            'a': 'left',
+            'd': 'right'
+        }
+        if event.keysym in key_mappings:
+            game.move(key_mappings[event.keysym])
+
+    root.bind('<KeyPress>', handle_keypress)
+
+    game.draw()
 
     root.mainloop()
 
