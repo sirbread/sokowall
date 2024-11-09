@@ -1,2 +1,2 @@
 # sokowall
-sokoba, played on your desktop wallpaper
+sokoban, played on your desktop wallpaper
